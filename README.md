@@ -40,6 +40,44 @@ only protection**. Use a long one (a phrase of 4 or more random words, or 16+
 characters), share it only with people who need it, and change it (re-encrypt,
 below) if it leaks or someone leaves.
 
+## Admin page (`/admin`)
+
+Admins sign in at **/admin** with their email and password. From there they can:
+
+- **Upload a CSV** of patients (add to the existing data, or replace it), with a
+  preview and a clear list of any rows with problems. Columns:
+  `participant_id, area, constituency, region, tb_type, hiv_status, gender, age, helminth, status, lat, lon`
+  (`helminth`, `lat`, `lon` may be empty; patients without a location are placed
+  near others in the same area or constituency). A template is on the page.
+- **Type in patients** one by one and upload them together.
+- **Download all data** as CSV or JSON.
+- **Change the viewer password.**
+- **First time only:** combine the old map file and the old Charts file into one
+  dataset that both the map and the Charts tab use.
+
+Every change is encrypted in the admin's browser with the viewer password and
+committed to `assets/tb-combined.enc.js` in this repository; Vercel redeploys and
+the live site shows it in about a minute. The server never sees readable patient
+data, and commit messages never name the admin or any patient. Every save is a
+commit, so any upload can be undone from the repository history.
+
+On the public site, *Add boundaries (GeoJSON)*, *Download summary (CSV)* and the
+*Admin page* link are shown only to a signed-in admin.
+
+### Setting it up in Vercel (once)
+
+In Vercel → the project → **Settings → Environment Variables**, add these for
+**Production**, then redeploy:
+
+| Name | Value |
+|------|-------|
+| `ADMIN_ACCOUNTS` | from `python tools/make_admin_hash.py email1 email2` (password hashes only) |
+| `SESSION_SECRET` | from the same command |
+| `GITHUB_TOKEN` | a GitHub fine-grained token: *Repository access* = only this repository, *Permissions → Contents* = Read and write |
+
+To add or remove an admin, or reset a password, run the tool again and replace
+`ADMIN_ACCOUNTS`. Removing an email signs that admin out at once.
+
 ## Put it online (Vercel)
 
 1. Sign in at **https://vercel.com** with your GitHub account.
@@ -106,6 +144,11 @@ assets/cohort.js       the Charts tab (cohort dashboard)
 assets/cohort-data.enc.js  the encrypted cohort data for the Charts tab
 assets/leaflet/        Leaflet 1.9.4 map library (served locally, no CDN)
 tools/encrypt_data.py  encrypts new data / sets a new password
+admin.html             the admin page (/admin)
+api/                   admin sign-in and saving (Vercel functions)
+assets/tbdata.js       the combined dataset: encryption, CSV import/export
+assets/tb-combined.enc.js  the encrypted combined data (written by the admin page)
+tools/make_admin_hash.py   makes admin password hashes for Vercel
 tb_web_map.html        forwards old links to index.html
 vercel.json            Vercel hosting settings and security headers
 ```
