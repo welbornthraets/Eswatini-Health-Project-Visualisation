@@ -37,6 +37,14 @@ function accounts(){
 }
 function secret(){ const s = process.env.SESSION_SECRET || ""; return s.length >= 32 ? s : null; }
 const configured = () => accounts().size > 0 && !!secret();
+// Names (never values) of settings that are missing or unusable, to help set the server up.
+function missingSettings(){
+  const m = [];
+  if (!accounts().size) m.push("ADMIN_ACCOUNTS");
+  if (!secret()) m.push("SESSION_SECRET (at least 32 characters)");
+  if (!process.env.GITHUB_TOKEN) m.push("GITHUB_TOKEN");
+  return m;
+}
 
 // scrypt:N:r:p:saltB64:hashB64
 function checkPassword(password, stored){
@@ -129,5 +137,5 @@ async function writeDataFile(payload, sha, message){
   return {sha:r.json.content && r.json.content.sha, commit:r.json.commit && r.json.commit.sha};
 }
 
-module.exports = {COOKIE, SESSION_HOURS, send, accounts, configured, checkPassword, DUMMY, makeSession, session,
+module.exports = {COOKIE, SESSION_HOURS, send, accounts, configured, missingSettings, checkPassword, DUMMY, makeSession, session,
   cookieHeader, sameOrigin, body, readDataFile, writeDataFile, validPayload};
