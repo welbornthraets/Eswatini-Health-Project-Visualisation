@@ -261,6 +261,6 @@
   /* ---------------- start ---------------- */
   fetch("api/admin/session", {credentials:"same-origin", cache:"no-store"}).then(r => r.json()).then(s => {
     if (s.admin) signedIn(s.email);
-    else { signedOut(""); if (s.configured === false) status("Admin sign-in is not set up on the server yet. See the README section \"Admin page\".", true); }
+    else { signedOut(""); if (s.configured === false) status("Admin sign-in is not set up on the server yet. Vercel needs: " + (s.missing || []).join(", ") + ". Add them in Vercel → Settings → Environment Variables, then deploy again.", true); }
   }).catch(() => { signedOut(""); status("The admin service is not reachable. Admin sign-in only works on the live site, not on a local copy.", true); });
 })();
