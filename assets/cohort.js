@@ -443,23 +443,27 @@
     const buf = await crypto.subtle.decrypt({name:"AES-GCM", iv:b64ToBytes(P.iv)}, key, b64ToBytes(P.data));
     return JSON.parse(new TextDecoder().decode(buf));
   }
-  async function tryUnlock(password){
-    if (unlocked) return true;
-    if (!window.COHORT_PAYLOAD) return false;
-    let rows;
-    try { rows = await decrypt(password); } catch(err){ return false; }
+  function useRows(rows){
     DATA = rows.map(r => Object.fromEntries(COLS.map((c,i) => [c, r[i]])));
     TOTAL = DATA.length;
     unlocked = true;
     $("coLock").hidden = true;
     $("coWrap").hidden = false;
     initApp();
+  }
+  async function tryUnlock(password){
+    if (unlocked) return true;
+    if (!window.COHORT_PAYLOAD) return false;
+    let rows;
+    try { rows = await decrypt(password); } catch(err){ return false; }
+    useRows(rows);
     return true;
   }
 
   // Called once the map is unlocked: the same password opens the cohort too when they match;
   // otherwise the Charts tab asks for the cohort password itself.
   window.Cohort = {
+    setRows: rows => { if (!unlocked) useRows(rows); },
     afterMapUnlock: async password => { if (!(await tryUnlock(password))) $("coLock").hidden = false; },
   };
 

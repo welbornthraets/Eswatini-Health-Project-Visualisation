@@ -16,6 +16,8 @@
 <link rel="stylesheet" href="assets/leaflet/leaflet.css">
 <link rel="stylesheet" href="assets/app.css">
 <script src="assets/leaflet/leaflet.js" defer></script>
+<script src="assets/tbdata.js" defer></script>
+<script src="assets/tb-combined.enc.js" defer></script>
 <script src="assets/tb-data.enc.js" defer></script>
 <script src="assets/cohort-data.enc.js" defer></script>
 <script src="assets/cohort.js" defer></script>
@@ -77,11 +79,12 @@
       <div class="row">
         <button class="btn" type="button" id="bReset">Reset filters</button>
         <button class="btn" type="button" id="bFit">Zoom to all</button>
-        <label class="btn" for="fGeo" style="margin:0">Add boundaries (GeoJSON)</label>
+        <label class="btn admin-only" for="fGeo" style="margin:0" hidden>Add boundaries (GeoJSON)</label>
         <input type="file" id="fGeo" accept=".geojson,.json,application/geo+json,application/json" hidden>
       </div>
       <div class="row">
-        <button class="btn" type="button" id="bCsv">Download summary (CSV)</button>
+        <button class="btn admin-only" type="button" id="bCsv" hidden>Download summary (CSV)</button>
+        <a class="btn admin-only" href="admin" hidden>Admin page</a>
         <button class="btn" type="button" id="bLink">Copy link to this view</button>
       </div>
       <p class="hint" id="actionNote" aria-live="polite"></p>
