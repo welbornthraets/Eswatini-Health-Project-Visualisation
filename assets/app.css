@@ -313,3 +313,4 @@ h1{font-size:22px;line-height:1.2}
   .co-tview summary{padding:6px 0}
   .leaflet-touch .leaflet-bar a{width:36px;height:36px;line-height:36px}
 }
+.admin-only[hidden]{display:none !important}

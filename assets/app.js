@@ -22,10 +22,14 @@ document.getElementById("lockForm").addEventListener("submit",async e=>{
     err.hidden=false; return;
   }
   btn.disabled=true; btn.textContent="Checking..."; err.hidden=true;
-  let rows;
+  let rows, cohortRows=null;
   const password=document.getElementById("lockPassword").value;
   try{
-    rows=await tryUnlock(password);
+    if(window.TB_COMBINED_PAYLOAD){
+      // One dataset (kept up to date from the admin page) feeds both the map and the Charts tab.
+      const data=await TBData.decrypt(window.TB_COMBINED_PAYLOAD,password);
+      rows=TBData.toMapRows(data.rows); cohortRows=TBData.toCohortRows(data.rows);
+    } else rows=await tryUnlock(password);
   }catch(ex){
     err.textContent="That password is not right. Try again.";
     err.hidden=false; btn.disabled=false; btn.textContent="Unlock";
@@ -35,9 +39,17 @@ document.getElementById("lockForm").addEventListener("submit",async e=>{
   document.body.classList.remove("locked");
   document.getElementById("lockScreen").remove();
   init();
-  // The Charts tab has its own cohort data; try the same password on it.
-  if(window.Cohort) window.Cohort.afterMapUnlock(password);
+  if(window.Cohort){
+    if(cohortRows) window.Cohort.setRows(cohortRows);
+    // Before the data is combined, the Charts tab has its own cohort file; try the same password on it.
+    else window.Cohort.afterMapUnlock(password);
+  }
 });
+// Admin-only controls (boundary upload, summary download, admin link) show only for a signed-in admin.
+// This only hides buttons; the admin API itself checks the login on every request.
+fetch("api/admin/session",{credentials:"same-origin",cache:"no-store"}).then(r=>r.ok?r.json():null).then(s=>{
+  if(s && s.admin) document.querySelectorAll(".admin-only").forEach(el=>{el.hidden=false;});
+}).catch(()=>{});
 document.getElementById("pwToggle").addEventListener("click",e=>{
   const inp=document.getElementById("lockPassword"), show=inp.type==="password";
   inp.type=show?"text":"password";
