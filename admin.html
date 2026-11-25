@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1c2027" media="(prefers-color-scheme: dark)">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'">
+<title>Admin - Eswatini TB Map</title>
+<link rel="icon" href="assets/icons/icon-192.png">
+<link rel="stylesheet" href="assets/app.css">
+<link rel="stylesheet" href="assets/admin.css">
+<script src="assets/tbdata.js" defer></script>
+<script src="assets/tb-data.enc.js" defer></script>
+<script src="assets/cohort-data.enc.js" defer></script>
+<script src="assets/admin.js" defer></script>
+</head>
+<body class="admin">
+
+<main class="ad-wrap">
+  <header class="ad-top">
+    <div>
+      <h1>Eswatini TB Map <span>Admin</span></h1>
+      <p class="ad-who" id="who" hidden></p>
+    </div>
+    <div class="ad-top-actions">
+      <a class="btn btn-sm" href="./">Open the site</a>
+      <button class="btn btn-sm" type="button" id="bLogout" hidden>Log out</button>
+    </div>
+  </header>
+
+  <p class="ad-status" id="status" role="status" aria-live="polite" hidden></p>
+
+  <!-- 1. sign in -->
+  <form class="ad-card ad-narrow" id="loginForm" autocomplete="on" hidden>
+    <h2>Admin sign in</h2>
+    <p class="hint">Only the site's admins can sign in here.</p>
+    <label>Email<input type="email" id="loginEmail" autocomplete="username" required></label>
+    <label>Password<input type="password" id="loginPassword" autocomplete="current-password" required minlength="1"></label>
+    <button class="btn btn-primary" type="submit" id="loginSubmit">Sign in</button>
+    <p class="ad-error" id="loginError" role="alert" hidden></p>
+  </form>
+
+  <!-- 2. open the data with the viewer password -->
+  <form class="ad-card ad-narrow" id="unlockForm" autocomplete="off" hidden>
+    <h2>Open the data</h2>
+    <p class="hint">Enter the viewer password (the one people use to open the map). Your browser decrypts the data here; it is never sent anywhere readable.</p>
+    <label>Viewer password<input type="password" id="unlockPassword" required></label>
+    <button class="btn btn-primary" type="submit" id="unlockSubmit">Open</button>
+    <p class="ad-error" id="unlockError" role="alert" hidden></p>
+  </form>
+
+  <!-- 2b. one-time: combine the old map file and cohort file -->
+  <section class="ad-card" id="combineCard" hidden>
+    <h2>Combine the existing data (one time)</h2>
+    <p class="hint">Today the map and the Charts tab read two separate files. This joins them into one dataset that both use, so every upload updates both. Each chart patient is matched to the map patient with the same details to get their location; any left over are placed near patients in the same area.</p>
+    <form id="combineForm" autocomplete="off">
+      <div class="ad-grid2">
+        <label>Map password<input type="password" id="cbMapPw" required></label>
+        <label>Charts (cohort) password<input type="password" id="cbCohortPw" placeholder="Leave empty if it is the same"></label>
+      </div>
+      <label>New viewer password for both <small>(at least 12 characters; leave empty to keep the map password)</small><input type="password" id="cbNewPw" minlength="12" autocomplete="new-password"></label>
+      <label class="ad-check"><input type="checkbox" id="cbKeepMapOnly" checked> Keep map patients that have no match in the chart data (they appear in the charts with helminth "Unknown")</label>
+      <button class="btn" type="submit" id="cbCheck">Check the match</button>
+    </form>
+    <div id="cbReport" hidden></div>
+    <button class="btn btn-primary" type="button" id="cbSave" hidden>Save combined data</button>
+    <p class="ad-error" id="cbError" role="alert" hidden></p>
+  </section>
+
+  <!-- 3. the admin tools -->
+  <div id="tools" hidden>
+    <section class="ad-card">
+      <h2>Current data</h2>
+      <div class="ad-stats" id="stats"></div>
+      <p class="hint" id="updated"></p>
+    </section>
+
+    <section class="ad-card">
+      <h2>Upload a CSV file</h2>
+      <p class="hint">Columns: <code>participant_id, area, constituency, region, tb_type, hiv_status, gender, age, helminth, status, lat, lon</code>. <code>helminth</code>, <code>lat</code> and <code>lon</code> may be left empty; patients without a location are placed near others in the same area or constituency.</p>
+      <div class="ad-row">
+        <label class="btn" for="csvFile">Choose CSV file</label>
+        <input type="file" id="csvFile" accept=".csv,text/csv" hidden>
+        <button class="btn" type="button" id="bTemplate">Download CSV template</button>
+        <span class="hint" id="csvName"></span>
+      </div>
+      <fieldset class="ad-mode">
+        <legend>What should happen to the data already on the site?</legend>
+        <label class="ad-check"><input type="radio" name="mode" value="append" checked> Add these patients to the existing data</label>
+        <label class="ad-check"><input type="radio" name="mode" value="replace"> Replace all existing data with this file</label>
+      </fieldset>
+      <div id="csvPreview" hidden></div>
+      <label class="ad-check" id="csvSkipWrap" hidden><input type="checkbox" id="csvSkip"> Save the valid rows and leave out the rows with problems</label>
+      <button class="btn btn-primary" type="button" id="csvSave" disabled>Upload and update the site</button>
+    </section>
+
+    <section class="ad-card">
+      <h2>Type in patients</h2>
+      <form id="manualForm" autocomplete="off">
+        <div class="ad-grid3">
+          <label>Participant ID<input id="mId" required></label>
+          <label>Region<input id="mRegion" list="dlRegion" required></label>
+          <label>Constituency<input id="mCons" list="dlCons" required></label>
+          <label>Area<input id="mArea" list="dlArea" required></label>
+          <label>TB type<select id="mTb" required><option value="">Choose</option><option>DSTB</option><option>MDR-TB</option></select></label>
+          <label>HIV status<select id="mHiv" required><option value="">Choose</option><option>Positive</option><option>Negative</option></select></label>
+          <label>Gender<select id="mGender" required><option value="">Choose</option><option>Female</option><option>Male</option></select></label>
+          <label>Age (years)<input id="mAge" type="number" min="0" max="120" step="1" required></label>
+          <label>Helminth study<select id="mHelminth"><option value="">Unknown</option><option>Yes</option><option>No</option></select></label>
+          <label>Outcome<select id="mStatus" required><option value="">Choose</option><option>Alive</option><option>Died</option></select></label>
+          <label>Latitude <small>(optional)</small><input id="mLat" inputmode="decimal" placeholder="-26.3167"></label>
+          <label>Longitude <small>(optional)</small><input id="mLon" inputmode="decimal" placeholder="31.1333"></label>
+        </div>
+        <datalist id="dlRegion"></datalist><datalist id="dlCons"></datalist><datalist id="dlArea"></datalist>
+        <button class="btn" type="submit">Add to the list</button>
+        <p class="ad-error" id="manualError" role="alert" hidden></p>
+      </form>
+      <div id="manualList" hidden></div>
+      <button class="btn btn-primary" type="button" id="manualSave" hidden>Upload and update the site</button>
+    </section>
+
+    <section class="ad-card">
+      <h2>Download the data</h2>
+      <p class="hint">Full patient-level data. Keep downloaded files inside the organisation.</p>
+      <div class="ad-row">
+        <button class="btn" type="button" id="bDlCsv">Download all data (CSV)</button>
+        <button class="btn" type="button" id="bDlJson">Download all data (JSON)</button>
+      </div>
+    </section>
+
+    <section class="ad-card">
+      <h2>Change the viewer password</h2>
+      <p class="hint">Everyone who opens the map will need the new password. At least 12 characters.</p>
+      <form id="pwForm" autocomplete="off" class="ad-grid2">
+        <label>New viewer password<input type="password" id="pwNew" minlength="12" autocomplete="new-password" required></label>
+        <label>Repeat it<input type="password" id="pwRepeat" minlength="12" autocomplete="new-password" required></label>
+        <button class="btn" type="submit">Change password</button>
+      </form>
+      <p class="ad-error" id="pwError" role="alert" hidden></p>
+    </section>
+  </div>
+</main>
+</body>
+</html>
