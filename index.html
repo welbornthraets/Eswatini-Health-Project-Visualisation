@@ -137,7 +137,6 @@
             <button type="button" data-target="coDemographics">Demographics</button>
             <button type="button" data-target="coRisk">Risk factors</button>
             <button type="button" data-target="coNetwork">Network</button>
-            <button type="button" data-target="coRecords">Patient records</button>
           </nav>
           <div class="co-filterbar">
             <select id="coRegion" aria-label="Region"><option value="">All regions</option></select>
@@ -235,19 +234,6 @@
             <div class="co-net"><svg id="coNetSvg" viewBox="0 0 900 560" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Network of regions and constituencies"></svg></div>
             <p class="co-cap co-net-hint">Node size = patients enrolled. Drag any node to move it. Hover for details.</p>
             <details class="co-tview"><summary>View as table</summary><table id="coTblNetwork"></table></details>
-          </figure>
-        </section>
-
-        <section id="coRecords">
-          <div class="co-head"><h3>Patient records</h3><p>Every record in the current filter. Click a column heading to sort.</p></div>
-          <figure class="co-card">
-            <p class="co-cap" id="coRowCount"></p>
-            <div class="co-table-scroll">
-              <table class="co-datatable">
-                <thead><tr id="coTheadRow"></tr></thead>
-                <tbody id="coTbody"></tbody>
-              </table>
-            </div>
           </figure>
         </section>
       </div>
