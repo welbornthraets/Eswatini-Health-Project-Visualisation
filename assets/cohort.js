@@ -99,7 +99,6 @@
     document.querySelectorAll(".co-nav button").forEach(b => b.addEventListener("click", () => {
       $(b.dataset.target).scrollIntoView({behavior:"smooth", block:"start"});
     }));
-    buildTableHead();
     if (darkMQ && darkMQ.addEventListener) darkMQ.addEventListener("change", renderAll);
     renderAll();
   }
@@ -264,7 +263,6 @@
     renderBarList("coChartMortality", mort, {tipLabel:"Mortality rate"});
     renderTable("coTblMortality", ["Subgroup","Mortality rate"], mort.map(i=>[i.label, i.valueLabel]));
 
-    renderRows(D);
     renderNetwork(D);
   }
 
@@ -290,39 +288,6 @@
     renderBarList("coChartOutcome", items);
     renderTable("coTblOutcome", ["Region","Alive","Died","Mortality rate"],
       items.map(i => [i.label, i.segments[0].value, i.segments[1].value, fmtPct(pct(i.segments[1].value, i.n))]));
-  }
-
-  /* ---------------- patient table ---------------- */
-  const headerDefs = [
-    {key:"id", label:"Participant ID"}, {key:"area", label:"Area"}, {key:"constituency", label:"Constituency"},
-    {key:"region", label:"Region"}, {key:"tbType", label:"TB type"}, {key:"hiv", label:"HIV status"},
-    {key:"gender", label:"Gender"}, {key:"age", label:"Age"}, {key:"helminth", label:"Helminth study"}, {key:"status", label:"Status"},
-  ];
-  let sortKey = "id", sortDir = 1;
-  function buildTableHead(){
-    const tr = $("coTheadRow");
-    headerDefs.forEach(h => {
-      const btn = el("button", {type:"button"}, h.label, el("span", {class:"arrow"}, ""));
-      btn.addEventListener("click", () => { if (sortKey === h.key) sortDir *= -1; else { sortKey = h.key; sortDir = 1; } renderRows(filteredData()); });
-      tr.append(el("th", {scope:"col"}, btn));
-    });
-  }
-  function renderRows(D){
-    $("coRowCount").textContent = `${D.length} of ${TOTAL} patients`;
-    const rows = D.slice().sort((a,b) => {
-      const av = a[sortKey], bv = b[sortKey];
-      return (typeof av === "number" ? av - bv : String(av).localeCompare(String(bv))) * sortDir;
-    });
-    const tbody = $("coTbody"); tbody.textContent = "";
-    rows.forEach(r => tbody.append(el("tr", null,
-      el("td", null, String(r.id)), el("td", null, r.area), el("td", null, r.constituency), el("td", null, r.region),
-      el("td", null, r.tbType), el("td", null, r.hiv), el("td", null, r.gender), el("td", null, String(r.age)),
-      el("td", null, r.helminth), el("td", null, el("span", {class:"co-pill " + (r.status==="Alive" ? "alive" : "died")}, r.status)))));
-    const ths = [...$("coTheadRow").children];
-    ths.forEach((th, i) => {
-      th.querySelector(".arrow").textContent = headerDefs[i].key === sortKey ? (sortDir === 1 ? " ▲" : " ▼") : "";
-      th.setAttribute("aria-sort", headerDefs[i].key === sortKey ? (sortDir === 1 ? "ascending" : "descending") : "none");
-    });
   }
 
   /* ---------------- force-directed network ---------------- */
