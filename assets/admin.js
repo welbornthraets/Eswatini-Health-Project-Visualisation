@@ -36,8 +36,11 @@
     show("loginForm", true);
     if (msg) status(msg, true);
   }
-  function signedIn(email){
+  function signedIn(email, emailReady){
     S.email = email;
+    $("pwEmailNote").textContent = emailReady
+      ? "All admins will be emailed the new password."
+      : "Admins will not be emailed: Vercel needs GMAIL_USER and GMAIL_APP_PASSWORD (see the README).";
     $("who").textContent = "Signed in as " + email; show("who", true);
     show("bLogout", true); show("loginForm", false); show("unlockForm", true);
     $("unlockPassword").focus();
@@ -48,7 +51,7 @@
     try {
       const j = await api("login", {body:{email:$("loginEmail").value, password:$("loginPassword").value}});
       $("loginPassword").value = "";
-      signedIn(j.email);
+      signedIn(j.email, j.emailReady);
     } catch(ex){ err("loginError", ex.message); }
     $("loginSubmit").disabled = false;
   });
@@ -81,12 +84,19 @@
   });
 
   /* ---------------- saving ---------------- */
+  // Returns a sentence about the admin email when the viewer password changed, else "".
   async function save(data, pw, summary){
     data.version = 2; data.updatedAt = new Date().toISOString();
     const payload = await TBData.encrypt(data, pw);
-    const j = await api("save", {body:{payload, sha:S.sha, summary}});
+    const body = {payload, sha:S.sha, summary};
+    const pwChanged = S.pw !== null && pw !== S.pw || summary.startsWith("combined") && pw !== S.mapPw;
+    if (pwChanged) body.newViewerPassword = pw;
+    const j = await api("save", {body});
     S.sha = j.sha; S.data = data; S.pw = pw;
     status("Saved. The live site will show the change in about a minute, once Vercel has redeployed it.");
+    if (!pwChanged) return "";
+    return j.emailed ? (j.emailed === 1 ? " The admin has been emailed the new password." : ` All ${j.emailed} admins have been emailed the new password.`)
+      : ` The admins could NOT be emailed (${j.emailError || "unknown problem"}), so tell them the new password yourself.`;
   }
 
   /* ---------------- one-time combine ---------------- */
@@ -100,6 +110,7 @@
     const res = TBData.combineLegacy(mapRows, cohortRows, $("cbKeepMapOnly").checked);
     const r = res.report;
     S.combined = {rows:res.rows, pw:newPw || mapPw, summary:`combined ${res.rows.length} patients`};
+    S.mapPw = mapPw;
     const box = $("cbReport"); box.textContent = "";
     box.append(el("ul", {class:"ad-report"},
       el("li", null, `Chart (cohort) patients: ${r.cohort}. Map patients: ${r.map}.`),
@@ -115,9 +126,9 @@
     if (!S.combined) return;
     $("cbSave").disabled = true; err("cbError");
     try {
-      await save({rows:S.combined.rows}, S.combined.pw, S.combined.summary);
+      const note = await save({rows:S.combined.rows}, S.combined.pw, S.combined.summary);
       show("combineCard", false); openTools();
-      status("Combined data saved. From now on the map and the Charts tab both use it. The live site updates in about a minute.");
+      status("Combined data saved. From now on the map and the Charts tab both use it. The live site updates in about a minute." + note, note.includes("NOT"));
     } catch(ex){ if (ex.message !== "signed out") err("cbError", ex.message); }
     $("cbSave").disabled = false;
   });
@@ -252,15 +263,15 @@
     if (a !== b) return err("pwError", "The two passwords are not the same.");
     if (!confirm("Change the viewer password? Everyone will need the new password to open the map.")) return;
     try {
-      await save({rows:S.data.rows}, a, "viewer password changed");
+      const note = await save({rows:S.data.rows}, a, "viewer password changed");
       $("pwNew").value = $("pwRepeat").value = "";
-      status("Viewer password changed. The live site will ask for the new password in about a minute.");
+      status("Viewer password changed. The live site will ask for the new password in about a minute." + note, note.includes("NOT"));
     } catch(ex){ if (ex.message !== "signed out") err("pwError", ex.message); }
   });
 
   /* ---------------- start ---------------- */
   fetch("api/admin/session", {credentials:"same-origin", cache:"no-store"}).then(r => r.json()).then(s => {
-    if (s.admin) signedIn(s.email);
+    if (s.admin) signedIn(s.email, s.emailReady);
     else { signedOut(""); if (s.configured === false) status("Admin sign-in is not set up on the server yet. Vercel needs: " + (s.missing || []).join(", ") + ". Add them in Vercel → Settings → Environment Variables, then deploy again.", true); }
   }).catch(() => { signedOut(""); status("The admin service is not reachable. Admin sign-in only works on the live site, not on a local copy.", true); });
 })();

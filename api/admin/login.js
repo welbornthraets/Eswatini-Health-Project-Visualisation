@@ -1,5 +1,6 @@
 "use strict";
 const L = require("../_lib");
+const mail = require("../_mail");
 
 // POST {email, password} -> sets the admin session cookie.
 module.exports = async (req, res) => {
@@ -15,5 +16,5 @@ module.exports = async (req, res) => {
     return L.send(res, 401, {error:"That email or password is not right."});
   }
   res.setHeader("Set-Cookie", L.cookieHeader(L.makeSession(email), L.SESSION_HOURS * 3600));
-  return L.send(res, 200, {email});
+  return L.send(res, 200, {email, emailReady:mail.configured()});
 };
