@@ -78,6 +78,21 @@ In Vercel → the project → **Settings → Environment Variables**, add these 
 To add or remove an admin, or reset a password, run the tool again and replace
 `ADMIN_ACCOUNTS`. Removing an email signs that admin out at once.
 
+### Emailing admins when the viewer password changes
+
+When an admin changes the viewer password, every admin in `ADMIN_ACCOUNTS` is
+emailed the new password, who changed it and when. The emails are sent from a
+Gmail account. To switch this on, add two more environment variables:
+
+| Name | Value |
+|------|-------|
+| `GMAIL_USER` | the Gmail address that sends the emails |
+| `GMAIL_APP_PASSWORD` | an App password for that Gmail: Google Account → Security → 2-Step Verification (must be on) → App passwords → create one named "TB map" |
+
+The new password is only passed on to the email; it is never stored or logged.
+If the email cannot be sent, the password still changes and the admin page says
+so, so the admin can tell the others.
+
 ## Put it online (Vercel)
 
 1. Sign in at **https://vercel.com** with your GitHub account.
